@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog, scrolledtext, messagebox
+from github_oauth import github_login, TOKEN
+from github_utils import get_github_user
 
 class CommitApp:
     def __init__(self, root):
@@ -44,7 +46,26 @@ class CommitApp:
         self.commit_output.pack(pady=5)
 
     def sign_in(self):
-        messagebox.showinfo("Sign In", "Pretend we're signing into GitHub!")
+        github_login()
+        self.sign_in_btn.config(text="Waiting for login...")
+
+        self.check_token_attempts = 0
+        self.root.after(1000, self.check_token)
+
+    def check_token(self):
+        if TOKEN is not None:
+            username = get_github_user(TOKEN)
+            if username:
+                self.sign_in_btn.config(text=f"Signed in as {username}")
+            else:
+                self.sign_in_btn.config(text="Login failed")
+            return
+        self.check_token_attempts += 1
+        if self.check_token_attempts < 60:
+            self.root.after(1000, self.check_token)
+        else:
+            self.sign_in_btn.config(text="Login timed out")
+
 
     def select_folder(self):
         folder = filedialog.askdirectory()
